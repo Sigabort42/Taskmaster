@@ -43,4 +43,3 @@ if __name__ == "__main__":
     print(conf)
     obj = taskmaster.Taskmaster(conf)
     obj.launch()
-#    obj.forkProg()
