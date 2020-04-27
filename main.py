@@ -4,10 +4,18 @@ import argparse
 import json
 import re
 from src import taskmaster
+import time
 
-def verify_file_conf(path_file):
+def     verify_char_in_str(s):
+    re_s = re.compile('(\".*\"|\'.*\')')
+    if re_s.search(s):
+        s_re = re_s.search(s).group().replace(" ", "_")
+        s = s.replace(re_s.search(s).group(), s_re)
+    return s
+
+def     verify_file_conf(path_file):
     with open(path_file) as file:
-        re_p = re.compile("(\[\w*\])")
+        re_p = re.compile("(\[.*\])")
         re_c = re.compile("(^\w.*)=(.*) ;")
         list_args_file = file.read().splitlines()
         args = []
@@ -21,6 +29,7 @@ def verify_file_conf(path_file):
             elif (re_c.match(arg)):
                 l_tmp = list(filter(None, re_c.split(arg)))
                 key_c, value_c = l_tmp[0], l_tmp[1]
+                value_c = verify_char_in_str(value_c)
                 args[i][key_c] = value_c.strip()
         return (args)
     
@@ -38,9 +47,7 @@ if __name__ == "__main__":
         metavar=""
     )
     args = parser.parse_args()
-    print("icicicii {}".format(args.c))
     conf = verify_file_conf(args.c)
-    print(conf)
+#    print("conf {}".format(conf[0]))
     obj = taskmaster.Taskmaster(conf)
     obj.launch()
-#    obj.forkProg()
