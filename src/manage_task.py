@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import signal
 import os
+import sys
 import subprocess
 import asyncio
 
@@ -31,6 +33,8 @@ class   Create():
                 out = subprocess.Popen(self.command, stdout=fout, stderr=ferr)
                 TAB_PROCESS[self.name]["ret_popen"] = out
                 TAB_PROCESS[self.name]["pid"] = out.pid
+                TAB_PROCESS[self.name]["state"] = "RUNNING"
+                print("Starting {}".format(self.name))
                 
     def fork_prog(self):
         """La methode sert a  executer et recuperer les informations d'un processus enfant"""
@@ -47,6 +51,7 @@ class   Create():
             in self.dcty[self.name] else "",
             "pid":              "",
             "ret_popen":        "",
+            "state":             "STARTING",
             "stdout":           self.dcty[self.name]["stdout_logfile"] if "stdout_logfile"
             in self.dcty[self.name] else "/dev/fd/1",
             "stderr":           self.dcty[self.name]["stderr_logfile"] if "stderr_logfile"
@@ -55,7 +60,6 @@ class   Create():
         asyncio.run(self.write_fd())
         
     def run(self):
-        print("run Task")
         self.fork_prog()
 
 
@@ -76,13 +80,71 @@ class   Manage:
         elif n == -6:
             return "SIGABORT"
         elif n == -9:
-            return "KILLED"
+            return "STOPPED"
         elif n == -14:
             return "ALARM"
-        elif n == -15:
-            return "TERMINATED"
+        elif n == -15 or n == 0:
+            return "STOPPED"
         return "RUNNING"
-        
+
+    def stop(self, name_proc):
+        if name_proc == "all":
+            for name in list(TAB_PROCESS):
+                if TAB_PROCESS[name]["state"] == "STOPPED":
+                    print(
+                        "-----------------------------\n{}: Already Stopped\n-----------------------------".
+                        format(name)
+                    )
+                else:
+                    TAB_PROCESS[name]["ret_popen"].terminate()
+                    TAB_PROCESS[name]["state"] = "STOPPED"
+                    print(
+                        "-----------------------------\n{}: Stopped\n-----------------------------".
+                        format(name)
+                    )
+        elif name_proc in TAB_PROCESS:
+            if TAB_PROCESS[name_proc]["state"] == "RUNNING":
+                TAB_PROCESS[name_proc]["ret_popen"].terminate()
+                TAB_PROCESS[name_proc]["state"] = "STOPPED"
+                print(
+                    "-----------------------------\n{}: Stopped\n-----------------------------".
+                    format(name_proc)
+                )
+            else:
+                print(
+                    "-----------------------------\n{}: Already Stopped\n-----------------------------".
+                    format(name_proc)
+                )
+
+
+                    
+    def start(self, name_proc):
+        if name_proc == "all":
+            for name in list(TAB_PROCESS):
+                if TAB_PROCESS[name]["state"] == "STOPPED":
+                    Create(self.dcty, name).run()
+                    print(
+                        "-----------------------------\n{}: Started\n-----------------------------".
+                        format(name)
+                    )
+                else:
+                    print(
+                        "-----------------------------\n{}: Already Running\n-----------------------------".
+                        format(name)
+                    )                    
+        elif name_proc in TAB_PROCESS:
+            if TAB_PROCESS[name_proc]["state"] == "STOPPED":
+                Create(self.dcty, name_proc).run()
+                print(
+                    "-----------------------------\n{}: Started\n-----------------------------".
+                    format(name_proc)
+                )
+            else:
+                print(
+                    "-----------------------------\n{}: Already Running\n-----------------------------".
+                    format(name_proc)
+                )
+                
     def run(self):
         for name in self.dcty:
             Create(self.dcty, name).run()
@@ -90,10 +152,11 @@ class   Manage:
         while 1:
             prompt = input("TaskMaster $>")
             p = prompt.split()
-            if prompt == "status":
+            if prompt == "help":
+                print("commands available are:\n{start [name|all]}\t{stop [name|all]}\t{restart [name|all]}\n{help}\t{status}\n")
+            elif prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
-#                    if TAB_PROCESS[name]["ret_popen"].returncode == None:
                     print(
                         "\nname of program: {}\npid is: [{}]\ncommand is [{}]\nEtat is [{}]\n".
                         format(
@@ -102,7 +165,18 @@ class   Manage:
                             TAB_PROCESS[name]["command"],
                             self.check_proc(TAB_PROCESS[name]["ret_popen"].returncode)
                         ))
-#                    else:
-#                        del TAB_PROCESS[name]
-
-#                print("TAB IS {}".format(TAB_PROCESS))
+            elif prompt.find("stop") != -1:
+                name_proc = prompt.replace("stop", "").strip()
+                self.stop(name_proc)
+            elif prompt.find("restart") != -1:
+                name_proc = prompt.replace("restart", "").strip()
+                self.stop(name_proc)
+                self.start(name_proc)
+            elif prompt.find("start") != -1:
+                name_proc = prompt.replace("start", "").strip()
+                self.start(name_proc)
+            elif prompt == "exit":
+                for name in list(TAB_PROCESS):
+                    self.stop(name)
+                print("Exit Succesfully")
+                sys.exit(0)
