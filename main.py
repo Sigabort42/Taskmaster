@@ -7,7 +7,7 @@ from src import taskmaster
 
 def verify_file_conf(path_file):
     with open(path_file) as file:
-        re_p = re.compile("(\[\w*\])")
+        re_p = re.compile("(\[.*\])")
         re_c = re.compile("(^\w.*)=(.*) ;")
         list_args_file = file.read().splitlines()
         args = []
@@ -38,8 +38,7 @@ if __name__ == "__main__":
         metavar=""
     )
     args = parser.parse_args()
-    print("icicicii {}".format(args.c))
     conf = verify_file_conf(args.c)
-    print(conf)
+#    print("conf {}".format(conf))
     obj = taskmaster.Taskmaster(conf)
     obj.launch()
