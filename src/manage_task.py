@@ -65,6 +65,24 @@ class   Manage:
     def __init__(self, dcty):
         self.dcty = dcty
 
+
+    def check_proc(self, n):
+        if n == -1:
+            return "HUP"
+        elif n == -2:
+            return "INTERRUPT"
+        elif n == -3:
+            return "QUIT"
+        elif n == -6:
+            return "SIGABORT"
+        elif n == -9:
+            return "KILLED"
+        elif n == -14:
+            return "ALARM"
+        elif n == -15:
+            return "TERMINATED"
+        return "RUNNING"
+        
     def run(self):
         for name in self.dcty:
             Create(self.dcty, name).run()
@@ -75,16 +93,16 @@ class   Manage:
             if prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
-                    if TAB_PROCESS[name]["ret_popen"].returncode == None:
-                        print(
-                            "\nname of program: {}\npid is: [{}]\ncommand is [{}]\nEtat is [{}]\n".
-                            format(
-                                name,
-                                TAB_PROCESS[name]["pid"],
-                                TAB_PROCESS[name]["command"],
-                                "Running"
-                            ))
-                    else:
-                        del TAB_PROCESS[name]
+#                    if TAB_PROCESS[name]["ret_popen"].returncode == None:
+                    print(
+                        "\nname of program: {}\npid is: [{}]\ncommand is [{}]\nEtat is [{}]\n".
+                        format(
+                            name,
+                            TAB_PROCESS[name]["pid"],
+                            TAB_PROCESS[name]["command"],
+                            self.check_proc(TAB_PROCESS[name]["ret_popen"].returncode)
+                        ))
+#                    else:
+#                        del TAB_PROCESS[name]
 
 #                print("TAB IS {}".format(TAB_PROCESS))
