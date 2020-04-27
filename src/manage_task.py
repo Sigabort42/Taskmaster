@@ -13,9 +13,18 @@ class   Create():
     def __init__(self, dcty, name):
         self.dcty = dcty
         self.name = name
-        self.command = dcty[name]["command"].split()
+        self.command = list(map(self.retablir_str, dcty[name]["command"].split()))
         self.args = " ".join(dcty[name]["command"].split()[1:])
 
+    def retablir_str(self, s):
+        if s.find("\"") != -1:
+            s = s.replace("\"", "")
+            s = s.replace("_", " ")
+        elif s.find("'") != -1:
+            s = s.replace("'", "")
+            s = s.replace("_", " ")
+        return s
+        
     async def write_fd(self):
         with open(TAB_PROCESS[self.name]["stdout"], "a") as fout:
             with open(TAB_PROCESS[self.name]["stderr"], "a") as ferr:
@@ -24,13 +33,13 @@ class   Create():
                 TAB_PROCESS[self.name]["pid"] = out.pid
                 
     def fork_prog(self):
-        """La methode sert a fork et a executer un processus enfant passer en argument de la fontion"""
+        """La methode sert a  executer et recuperer les informations d'un processus enfant"""
+
         pid = None
         TAB_PROCESS[self.name] = {
             "autorestart":      self.dcty[self.name]["autorestart"] if "autorestart"
             in self.dcty[self.name] else "",
-            "command":          self.dcty[self.name]["command"] if "command"
-            in self.dcty[self.name] else "",
+            "command":          " ".join(self.command),
             "exitcodes":        self.dcty[self.name]["exitcodes"] if "exitcodes"
             in self.dcty[self.name] else "",
             "name":             self.name if self.name is not None else "",
@@ -68,7 +77,7 @@ class   Manage:
                     TAB_PROCESS[name]["ret_popen"].poll()
                     if TAB_PROCESS[name]["ret_popen"].returncode == None:
                         print(
-                            "\nname of program: {}\npid is: {}\ncommand is {}\nEtat is {}\n".
+                            "\nname of program: {}\npid is: [{}]\ncommand is [{}]\nEtat is [{}]\n".
                             format(
                                 name,
                                 TAB_PROCESS[name]["pid"],
@@ -78,4 +87,4 @@ class   Manage:
                     else:
                         del TAB_PROCESS[name]
 
-                print("TAB IS {}".format(TAB_PROCESS))
+#                print("TAB IS {}".format(TAB_PROCESS))
