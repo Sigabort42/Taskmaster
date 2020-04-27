@@ -3,6 +3,7 @@
 import signal
 import os
 import sys
+import os
 import subprocess
 import asyncio
 
@@ -155,6 +156,9 @@ class   Manage:
             if prompt == "help":
                 print("commands available are:\n{start [name|all]}\t{stop [name|all]}\t{restart [name|all]}\n{help}\t{status}\n")
             elif prompt == "status":
+                for name in list(TAB_PROCESS):
+                    TAB_PROCESS[name]["ret_popen"].poll()
+            if prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
                     print(
