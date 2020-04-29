@@ -3,9 +3,12 @@
 import signal
 import os
 import sys
-import os
+import termios
+import curses
 import subprocess
 import asyncio
+
+from src import utils
 
 
 TAB_PROCESS = {}
@@ -16,35 +19,37 @@ class   Create():
     def __init__(self, dcty, name):
         self.dcty = dcty
         self.name = name
-        self.command = list(map(self.retablir_str, dcty[name]["command"].split()))
+        self.command = list(map(utils.retablir_str, dcty[name]["command"].split()))
         self.args = " ".join(dcty[name]["command"].split()[1:])
 
-    def retablir_str(self, s):
-        if s.find("\"") != -1:
-            s = s.replace("\"", "")
-            s = s.replace("_", " ")
-        elif s.find("'") != -1:
-            s = s.replace("'", "")
-            s = s.replace("_", " ")
-        return s
-        
     async def write_fd(self):
         with open(TAB_PROCESS[self.name]["stdout"], "a") as fout:
             with open(TAB_PROCESS[self.name]["stderr"], "a") as ferr:
-                out = subprocess.Popen(self.command, stdout=fout, stderr=ferr)
+                print("tab {}".format(TAB_PROCESS[self.name]["umask"]))
+                out = subprocess.Popen(
+                    args=self.command,
+                    cwd=TAB_PROCESS[self.name]["directory"],
+                    env=TAB_PROCESS[self.name]["environment"],
+                    stdout=fout,
+                    stderr=ferr,
+                )
                 TAB_PROCESS[self.name]["ret_popen"] = out
                 TAB_PROCESS[self.name]["pid"] = out.pid
                 TAB_PROCESS[self.name]["state"] = "RUNNING"
-                print("Starting {}".format(self.name))
+                print("Starting {} {} {}".format(self.name, out.pid, os.getpid()))
                 
     def fork_prog(self):
         """La methode sert a  executer et recuperer les informations d'un processus enfant"""
-
-        pid = None
         TAB_PROCESS[self.name] = {
+            "autostart":      self.dcty[self.name]["autostart"] if "autostart"
+            in self.dcty[self.name] else "",
             "autorestart":      self.dcty[self.name]["autorestart"] if "autorestart"
             in self.dcty[self.name] else "",
             "command":          " ".join(self.command),
+            "directory":        self.dcty[self.name]["directory"] if "directory"
+            in self.dcty[self.name] else None,
+            "environment":      self.dcty[self.name]["environment"] if "environment"
+            in self.dcty[self.name] else None,
             "exitcodes":        self.dcty[self.name]["exitcodes"] if "exitcodes"
             in self.dcty[self.name] else "",
             "name":             self.name if self.name is not None else "",
@@ -57,6 +62,8 @@ class   Create():
             in self.dcty[self.name] else "/dev/fd/1",
             "stderr":           self.dcty[self.name]["stderr_logfile"] if "stderr_logfile"
             in self.dcty[self.name] else "/dev/fd/2",
+            "umask":            int(self.dcty[self.name]["umask"]) if "umask"
+            in self.dcty[self.name] else -1,
         }
         asyncio.run(self.write_fd())
         
@@ -71,104 +78,61 @@ class   Manage:
         self.dcty = dcty
 
 
-    def check_proc(self, n):
-        if n == -1:
-            return "HUP"
-        elif n == -2:
-            return "INTERRUPT"
-        elif n == -3:
-            return "QUIT"
-        elif n == -6:
-            return "SIGABORT"
-        elif n == -9:
-            return "STOPPED"
-        elif n == -14:
-            return "ALARM"
-        elif n == -15 or n == 0:
-            return "STOPPED"
-        return "RUNNING"
-
     def stop(self, name_proc):
         if name_proc == "all":
             for name in list(TAB_PROCESS):
                 if TAB_PROCESS[name]["state"] == "STOPPED":
-                    print(
-                        "-----------------------------\n{}: Already Stopped\n-----------------------------".
-                        format(name)
-                    )
+                    print(utils.ALREADY_STOPPED.format(name))
                 else:
                     TAB_PROCESS[name]["ret_popen"].terminate()
                     TAB_PROCESS[name]["state"] = "STOPPED"
-                    print(
-                        "-----------------------------\n{}: Stopped\n-----------------------------".
-                        format(name)
-                    )
+                    print(utils.STOPPED.format(name))
         elif name_proc in TAB_PROCESS:
             if TAB_PROCESS[name_proc]["state"] == "RUNNING":
                 TAB_PROCESS[name_proc]["ret_popen"].terminate()
                 TAB_PROCESS[name_proc]["state"] = "STOPPED"
-                print(
-                    "-----------------------------\n{}: Stopped\n-----------------------------".
-                    format(name_proc)
-                )
+                print(utils.STOPPED.format(name_proc))
             else:
-                print(
-                    "-----------------------------\n{}: Already Stopped\n-----------------------------".
-                    format(name_proc)
-                )
-
-
+                print(utils.ALREADY_STOPPED.format(name_proc))
                     
     def start(self, name_proc):
         if name_proc == "all":
             for name in list(TAB_PROCESS):
                 if TAB_PROCESS[name]["state"] == "STOPPED":
                     Create(self.dcty, name).run()
-                    print(
-                        "-----------------------------\n{}: Started\n-----------------------------".
-                        format(name)
-                    )
+                    print(utils.STARTED.format(name))
                 else:
-                    print(
-                        "-----------------------------\n{}: Already Running\n-----------------------------".
-                        format(name)
-                    )                    
+                    print(utils.ALREADY_RUNNING.format(name))
         elif name_proc in TAB_PROCESS:
             if TAB_PROCESS[name_proc]["state"] == "STOPPED":
                 Create(self.dcty, name_proc).run()
-                print(
-                    "-----------------------------\n{}: Started\n-----------------------------".
-                    format(name_proc)
-                )
+                print(utils.STARTED.format(name_proc))
             else:
-                print(
-                    "-----------------------------\n{}: Already Running\n-----------------------------".
-                    format(name_proc)
-                )
-                
+                print(utils.ALREADY_RUNNING.format(name_proc))
+
     def run(self):
         for name in self.dcty:
-            Create(self.dcty, name).run()
+            if ("autostart" in self.dcty[name] and
+                self.dcty[name]["autostart"] == "true"):
+                Create(self.dcty, name).run()
+            else:
+                Create(self.dcty, name).run()
+                self.stop(name)
 
         while 1:
-            prompt = input("TaskMaster $>")
+            prompt = input("TaskMaster $>")            
             p = prompt.split()
             if prompt == "help":
-                print("commands available are:\n{start [name|all]}\t{stop [name|all]}\t{restart [name|all]}\n{help}\t{status}\n")
+                print(utils.COMMAND_AVAILABLE)
             elif prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
-            if prompt == "status":
-                for name in list(TAB_PROCESS):
-                    TAB_PROCESS[name]["ret_popen"].poll()
-                    print(
-                        "\nname of program: {}\npid is: [{}]\ncommand is [{}]\nEtat is [{}]\n".
-                        format(
-                            name,
-                            TAB_PROCESS[name]["pid"],
-                            TAB_PROCESS[name]["command"],
-                            self.check_proc(TAB_PROCESS[name]["ret_popen"].returncode)
-                        ))
+                    print(utils.CMD_STATUS.format(
+                        name,
+                        TAB_PROCESS[name]["pid"],
+                        TAB_PROCESS[name]["command"],
+                        utils.check_proc(TAB_PROCESS[name]["ret_popen"].returncode)
+                    ))
             elif prompt.find("stop") != -1:
                 name_proc = prompt.replace("stop", "").strip()
                 self.stop(name_proc)

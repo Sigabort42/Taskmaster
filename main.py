@@ -48,6 +48,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     conf = verify_file_conf(args.c)
-#    print("conf {}".format(conf[0]))
+#    print("conf {}".format(conf))
     obj = taskmaster.Taskmaster(conf)
     obj.launch()
