@@ -51,5 +51,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     conf = verify_file_conf(args.c)
 #    print("conf {}".format(conf))
-    obj = taskmaster.Taskmaster(conf)
-    obj.launch()
+    TM = taskmaster.Taskmaster(conf)
+    TM.launch()

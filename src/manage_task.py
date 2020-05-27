@@ -6,7 +6,9 @@ import sys
 import termios
 import curses
 import subprocess
-#import asyncio
+import asyncio
+import time
+import _thread
 
 from src import utils
 
@@ -34,26 +36,10 @@ def check_proc(n):
         return "ERROR: " + str(n)
     return "FINISHED"
 
+
 def receive_sig(sig_nb, frame):
     print("sig is {}".format(sig_nb))
     check_proc(sig_nb)
-
-def handler_sig():
-    signal.signal(signal.SIGHUP, receive_sig)
-    signal.signal(signal.SIGINT, receive_sig)
-    signal.signal(signal.SIGQUIT, receive_sig)
-    signal.signal(signal.SIGILL, receive_sig)
-    signal.signal(signal.SIGTRAP, receive_sig)
-    signal.signal(signal.SIGABRT, receive_sig)
-    signal.signal(signal.SIGBUS, receive_sig)
-    signal.signal(signal.SIGFPE, receive_sig)
-    #signal.signal(signal.SIGKILL, receive_sig)
-    signal.signal(signal.SIGUSR1, receive_sig)
-    signal.signal(signal.SIGSEGV, receive_sig)
-    signal.signal(signal.SIGUSR2, receive_sig)
-    signal.signal(signal.SIGPIPE, receive_sig)
-    signal.signal(signal.SIGALRM, receive_sig)
-    signal.signal(signal.SIGTERM, receive_sig)
 
 class   Create():
     """Classe qui permet de creer des tasks"""
@@ -64,7 +50,12 @@ class   Create():
         self.command = list(map(utils.retablir_str, dcty[name]["command"].split()))
         self.args = " ".join(dcty[name]["command"].split()[1:])
 
-    def start_process(self):
+    def verif_time(self, name):
+        time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
+        TAB_PROCESS[name]["ret_popen"].poll()
+        TAB_PROCESS[name]["state"] = "RUNNING" if TAB_PROCESS[name]["ret_popen"].returncode == None else "ERROR: Exited too quickly (process log may have details)"
+        
+    async def start_process(self):
         umask = os.umask(TAB_PROCESS[self.name]["umask"])
         os.chdir(TAB_PROCESS[self.name]["directory"])
         with open(TAB_PROCESS[self.name]["stdout"], "a") as fout:
@@ -81,6 +72,8 @@ class   Create():
                 print(utils.STARTING.format(self.name))
                 TAB_PROCESS[self.name]["state"] = "RUNNING"
         os.umask(umask)
+        _thread.start_new_thread(self.verif_time, (self.name, ))
+        
         
     def fork_prog(self):
         """La methode sert a  executer et recuperer les informations d'un processus enfant"""
@@ -106,10 +99,12 @@ class   Create():
             in self.dcty[self.name] else "/dev/fd/1",
             "stderr":           self.dcty[self.name]["stderr_logfile"] if "stderr_logfile"
             in self.dcty[self.name] else "/dev/fd/2",
+            "stopwaitsecs":     self.dcty[self.name]["stopwaitsecs"] if "stopwaitsecs"
+            in self.dcty[self.name] else "5",
             "umask":            int(self.dcty[self.name]["umask"]) if "umask"
             in self.dcty[self.name] else 22,
         }
-        self.start_process()
+        asyncio.run(self.start_process())
         
     def run(self):
         self.fork_prog()
@@ -120,7 +115,32 @@ class   Manage:
 
     def __init__(self, dcty):
         self.dcty = dcty
+        self.handler_sig()
 
+
+    def handler_sig(self):
+        signal.signal(signal.SIGHUP, receive_sig)
+        signal.signal(signal.SIGINT, self.receive_sigT)
+        signal.signal(signal.SIGQUIT, self.receive_sigT)
+        signal.signal(signal.SIGILL, receive_sig)
+        signal.signal(signal.SIGTRAP, receive_sig)
+        signal.signal(signal.SIGABRT, receive_sig)
+        signal.signal(signal.SIGBUS, receive_sig)
+        signal.signal(signal.SIGFPE, receive_sig)
+        #signal.signal(signal.SIGKILL, receive_sig)
+        signal.signal(signal.SIGUSR1, receive_sig)
+        signal.signal(signal.SIGSEGV, receive_sig)
+        signal.signal(signal.SIGUSR2, receive_sig)
+        signal.signal(signal.SIGPIPE, receive_sig)
+        signal.signal(signal.SIGALRM, receive_sig)
+        signal.signal(signal.SIGTERM, self.receive_sigT)
+
+    def receive_sigT(self, sig_nb, frame):
+        print("sigtttt is {}".format(sig_nb))
+        for name in list(TAB_PROCESS):
+            self.stop(name)
+        print("Exit Succesfully")
+        sys.exit(0)
 
     def stop(self, name_proc):
         if name_proc == "all":
@@ -154,8 +174,12 @@ class   Manage:
                 elif TAB_PROCESS[name]["state"] == "FINISHED":
                     Create(self.dcty, name).run()
                     print(utils.FINISHED.format(name_proc))
-                else:
+                elif TAB_PROCESS[name]["state"] == "RUNNING":
                     print(utils.ALREADY_RUNNING.format(name))
+                else:
+                    Create(self.dcty, name_proc).run()
+                    print(utils.STARTED.format(name_proc))
+
         elif name_proc in TAB_PROCESS:
             if TAB_PROCESS[name_proc]["state"] == "STOPPED":
                 Create(self.dcty, name_proc).run()
@@ -163,8 +187,11 @@ class   Manage:
             elif TAB_PROCESS[name_proc]["state"] == "FINISHED":
                 Create(self.dcty, name_proc).run()
                 print(utils.FINISHED.format(name_proc))
-            else:
+            elif TAB_PROCESS[name_proc]["state"] == "RUNNING":
                 print(utils.ALREADY_RUNNING.format(name_proc))
+            else:
+                Create(self.dcty, name_proc).run()
+                print(utils.STARTED.format(name_proc))
 
     def run(self):
         for name in self.dcty:
@@ -178,12 +205,13 @@ class   Manage:
         while 1:
             prompt = input("TaskMaster $>")    
             p = prompt.split()
-            if prompt == "help":
+            if prompt == "help" or prompt == "?":
                 print(utils.COMMAND_AVAILABLE)
             elif prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
-                    TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["ret_popen"].returncode) 
+                    if "Exited" not in TAB_PROCESS[name]["state"]:
+                        TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["ret_popen"].returncode) 
                     print(utils.CMD_STATUS.format(
                         name,
                         TAB_PROCESS[name]["pid"],
