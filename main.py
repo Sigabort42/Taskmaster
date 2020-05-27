@@ -3,8 +3,9 @@
 import argparse
 import json
 import re
-from src import taskmaster
 import time
+
+from src import taskmaster
 
 def     verify_char_in_str(s):
     re_s = re.compile('(\".*\"|\'.*\')')
@@ -46,6 +47,7 @@ if __name__ == "__main__":
         help="path file of [taskmaster.conf] by default is %(default)s",
         metavar=""
     )
+#    utils.handler_sig()
     args = parser.parse_args()
     conf = verify_file_conf(args.c)
 #    print("conf {}".format(conf))
