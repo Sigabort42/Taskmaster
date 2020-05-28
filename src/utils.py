@@ -26,3 +26,20 @@ def retablir_str(s):
         s = s.replace("'", "")
         s = s.replace("_", " ")
     return s
+
+
+def graceful_stop(name_stop):
+    if (name_stop == "HUP"):
+        return signal.SIGHUP
+    elif (name_stop == "INT"):
+        return signal.SIGINT
+    elif (name_stop == "QUIT"):
+        return signal.SIGQUIT
+    elif (name_stop == "ABRT"):
+        return signal.SIGABRT
+    elif (name_stop == "KILL"):
+        return signal.SIGKILL
+    elif (name_stop == "ALRM"):
+        return signal.SIGALRM
+    elif (name_stop == "TERM"):
+        return signal.SIGTERM
