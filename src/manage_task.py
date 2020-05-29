@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import smtplib
 import json
 import signal
 import os
@@ -10,6 +11,7 @@ import subprocess
 import asyncio
 import time
 import _thread
+import re
 
 from src import utils
 from src import checker_file
@@ -92,6 +94,8 @@ class   Create():
             in self.dcty[self.name] else None,
             "exitcodes":        self.dcty[self.name]["exitcodes"] if "exitcodes"
             in self.dcty[self.name] else "0",
+            "mail_report":      self.dcty[self.name]["mail_report"] if "mail_report"
+            in self.dcty[self.name] else "",
             "name":             self.name if self.name is not None else "",
             "numprocs":         self.dcty[self.name]["numprocs"] if "numprocs"
             in self.dcty[self.name] else "1",
@@ -164,7 +168,6 @@ class   Manage:
 
     def time_sleep_graceful_stop(self, pid, name):
         time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
-#        print("pid", pid)
         TAB_PROCESS[name]["ret_popen"].poll()
         if (TAB_PROCESS[name]["ret_popen"].returncode == None):
             os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))            
@@ -173,6 +176,7 @@ class   Manage:
 
     def restart_proc_unexpected(self, name):
         i = 0
+        re_email = re.compile("([^@]+@[^@]+\.[^@]+)")
         while (1):
             TAB_PROCESS[name]["ret_popen"].poll()
             n = check_proc(TAB_PROCESS[name]["ret_popen"].returncode)
@@ -184,6 +188,23 @@ class   Manage:
                         time.sleep(2)
                         i += 1
                         Create(self.dcty, name).run()
+                elif (TAB_PROCESS[name]["autorestart"] == "unexpected" and
+                      i == int(TAB_PROCESS[name]["startretries"]) and
+                      "mail_report" in TAB_PROCESS[name] and
+                      re_email.match(TAB_PROCESS[name]["mail_report"])):
+                    i += 1
+                    dest = TAB_PROCESS[name]["mail_report"]
+                    serveur = smtplib.SMTP('smtp.gmail.com', 587)
+                    serveur.ehlo()
+                    serveur.starttls()
+                    serveur.ehlo()
+                    serveur.login("allinplans@gmail.com", "Okokokok8")
+                    message = "Le programme {} sous le pid {} a ete arrete".format(
+                        name,
+                        TAB_PROCESS[name]["pid"])
+                    serveur.sendmail("allinplans@gmail.com", dest, message)
+                    serveur.quit()
+
                 elif TAB_PROCESS[name]["autorestart"] == "always":
                     time.sleep(2)
                     Create(self.dcty, name).run()
