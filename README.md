@@ -7,11 +7,13 @@ Il sera executé via le terminal et fera son travail pendant qu’il donnera l�
 
 **Commandes Disponibles**
 
-* `?` or `help` **Afficher l'aide et les commandes disponibles**
-* `start` *name* **|** *all* **Demarrer un programme ou tout les programmes stoppé**
-* `stop` *name* **|** *all* **Stopper un programme ou tout les programmes demarré**
-* `restart` *name* **|** *all* **Redemarrer un programme ou tout les programmes stoppé**
-* `reload` **Recharger le fichiers de configuration et relancer les processus qui en ont besoin**
+* `TaskMaster $>?` or `TaskMaster $>help` **Afficher l'aide et les commandes disponibles**
+* `TaskMaster $>status`  **Voir le details des processus lancé**
+* `TaskMaster $>info` *name* **Toutes les informations de configuration du processus {*name*}**
+* `TaskMaster $>start` *name* **|** *all* **Demarrer un programme ou tout les programmes stoppé**
+* `TaskMaster $>stop` *name* **|** *all* **Stopper un programme ou tout les programmes demarré**
+* `TaskMaster $>restart` *name* **|** *all* **Redemarrer un programme ou tout les programmes stoppé**
+* `TaskMaster $>reload` **Recharger le fichiers de configuration et relancer les processus qui en ont besoin**
   * modifier la commande
   * modifier l'umask
   * modifier le directory
