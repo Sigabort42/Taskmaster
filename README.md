@@ -7,15 +7,15 @@ Il sera executé via le terminal et fera son travail pendant qu’il donnera l�
 
 **Commandes Disponibles**
 
-Afficher l'aide et les commandes disponibles
+**Afficher l'aide et les commandes disponibles**
 * `?` or `help`
-Demarrer un programme ou tout les programmes stoppé
+**Demarrer un programme ou tout les programmes stoppé**
 * `start` *name* **|** *all*
-Stopper un programme ou tout les programmes demarré
+**Stopper un programme ou tout les programmes demarré**
 * `stop` *name* **|** *all*
-Redemarrer un programme ou tout les programmes stoppé
+**Redemarrer un programme ou tout les programmes stoppé**
 * `restart` *name* **|** *all*
-Recharger le fichiers de configuration et relancer les processus qui en ont besoin
+**Recharger le fichiers de configuration et relancer les processus qui en ont besoin**
 * `reload`
   * modifier la commande
   * modifier l'umask
