@@ -22,7 +22,6 @@ class Checker_file:
         return s
 
     def     verify_file_conf(self, path_file):
-        print("path {}".format(path_file))
         with open(path_file) as file:
             re_p = re.compile("(\[.*\])")
             re_c = re.compile("(^\w.*)=(.*) ;")
