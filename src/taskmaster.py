@@ -4,8 +4,10 @@ import os
 from src import manage_task
 
 class           Taskmaster:
-    def __init__(self, config=None):
+    def __init__(self, config=None, parser=None, path_file="/etc/taskmaster.conf"):
         self.config = config
+        self.parser = parser
+        self.path_file = path_file
 
     def __del__(self):
         print("del TaskMaster")
@@ -41,4 +43,4 @@ class           Taskmaster:
     def launch(self):
         dcty = self.create_dcty()
 #        print("dcty == {}".format(dcty))
-        manage_task.Manage(dcty).run()
+        manage_task.Manage(dcty, self.parser, self.path_file).run()

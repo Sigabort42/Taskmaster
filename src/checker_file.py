@@ -5,9 +5,11 @@ import re
 class Checker_file:
     """Classe qui permet de checker un fichier .conf et de le formater dans un dictionnaire"""
 
-    def __init__(self, parser):
+    def __init__(self, parser, path_file="/etc/taskmaster.conf"):
         self.args = parser.parse_args()
-
+        self.path_file = path_file
+        self.config = ""
+        
     def __del__(self):
         print("Del Checker_file")
 
@@ -20,6 +22,7 @@ class Checker_file:
         return s
 
     def     verify_file_conf(self, path_file):
+        print("path {}".format(path_file))
         with open(path_file) as file:
             re_p = re.compile("(\[.*\])")
             re_c = re.compile("(^\w.*)=(.*) ;")
@@ -39,7 +42,31 @@ class Checker_file:
                     args[i][key_c] = value_c.strip()
             return (args)
 
+
+
+    def create_dcty(self):
+        """La méthode sert a crer le dictionnaire des processus a superviser par TaskMaster"""
+        dcty = {}
+        for conf in self.config:
+            if (conf.get("name") and conf.get("command")):
+                if (conf.get("numprocs") != None and int(conf.get("numprocs")) > 1):
+                    for idx in range(0, int(conf.get("numprocs"))):
+                        command = conf["command"].split()
+                        if conf.get("process_name")[0] == '%':
+                            i = conf.get("name").find(":") + 1
+                            dcty[conf.get("name")[i:] + "_" + str(idx)] = conf
+                        else:
+                            dcty[conf.get("process_name")] = conf
+                else:
+                    command = conf["command"].split()
+                    if conf.get("process_name")[0] == '%':
+                        i = conf.get("name").find(":") + 1
+                        dcty[conf.get("name")[i:]] = conf
+                    else:
+                        dcty[conf.get("process_name")] = conf
+        return dcty
+        
         
     def run(self):
-        conf = self.verify_file_conf(self.args.c)
-        return conf
+        self.config = self.verify_file_conf(self.path_file)
+        return self.create_dcty()

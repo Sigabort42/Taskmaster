@@ -43,3 +43,6 @@ def graceful_stop(name_stop):
         return signal.SIGALRM
     elif (name_stop == "TERM"):
         return signal.SIGTERM
+
+def compare_file_reload():
+    pass

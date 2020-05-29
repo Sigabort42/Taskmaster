@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import os
 import argparse
 
-from src import taskmaster
+from src import manage_task
 from src import checker_file
 
 PARSER = argparse.ArgumentParser(
@@ -18,8 +19,7 @@ PARSER.add_argument(
 )
 
 if __name__ == "__main__":
-
-    conf = checker_file.Checker_file(PARSER).run()
+    path_file = os.path.abspath(PARSER.parse_args().c)
+    conf = checker_file.Checker_file(PARSER, path_file).run()
+    manage_task.Manage(conf, PARSER, path_file).run()
 #    print("conf {}".format(conf))
-    TM = taskmaster.Taskmaster(conf)
-    TM.launch()

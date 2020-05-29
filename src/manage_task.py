@@ -12,6 +12,7 @@ import time
 import _thread
 
 from src import utils
+from src import checker_file
 
 
 TAB_PROCESS = {}
@@ -128,8 +129,11 @@ class   Create():
 class   Manage:
     """Manager de Task"""
 
-    def __init__(self, dcty):
+    def __init__(self, dcty, parser, path_file):
         self.dcty = dcty
+        self.parser = parser
+        self.checker_file = checker_file.Checker_file(parser, path_file)
+        self.path_file = path_file
         self.handler_sig()
 
 
@@ -244,11 +248,18 @@ class   Manage:
                 self.stop(name_proc)
             elif prompt.find("restart") != -1:
                 name_proc = prompt.replace("restart", "").strip()
+                secs = TAB_PROCESS[name_proc]["stopwaitsecs"]
+                TAB_PROCESS[name_proc]["stopwaitsecs"] = "0"
+                time.sleep(0.5)
                 self.stop(name_proc)
                 self.start(name_proc)
+                TAB_PROCESS[name_proc]["stopwaitsecs"] = secs
             elif prompt.find("start") != -1:
                 name_proc = prompt.replace("start", "").strip()
                 self.start(name_proc)
+            elif prompt.find("reload") != -1:
+                print("checker_file {}".format(self.checker_file.run()))
+#                self.checker_file
             elif prompt == "exit":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["stopwaitsecs"] = "0"
