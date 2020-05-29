@@ -8,7 +8,7 @@ Il sera executé via le terminal et fera son travail pendant qu’il donnera l�
 **Commandes Disponibles**
 
 * ? or help
-*start all | name
-*stop all | name
-*restart all | name
-*reload
+* start all | name
+* stop all | name
+* restart all | name
+* reload
