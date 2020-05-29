@@ -155,9 +155,11 @@ def compare_file_reload(prev_dcty, new_dcty, TAB_PROCESS):
                         dcty_change[name_prev] = new_dcty[name_prev]
                     else:
                         TAB_PROCESS[name_prev]["ret_popen"].send_signal(signal.SIGTERM)
+                        print(STOPPED.format(name_prev))
                         dcty_change[name_prev] = new_dcty[name_prev]
                         name_modify.append(name_prev)
             else:
+                print(STOPPED.format(name_prev))
                 TAB_PROCESS[name_prev]["ret_popen"].send_signal(signal.SIGTERM)
                 del TAB_PROCESS[name_prev]
 

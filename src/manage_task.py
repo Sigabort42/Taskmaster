@@ -269,7 +269,6 @@ class   Manage:
                 
             elif prompt.find("reload") != -1:
                 self.dcty, TAB_PROCESS, name_modify = utils.compare_file_reload(self.dcty, self.checker_file.run(), TAB_PROCESS)
-                print("TAPROCESS", TAB_PROCESS)
                 for name in self.dcty:
                     if name not in list(TAB_PROCESS) or name in name_modify:
                         Create(self.dcty, name).run()
