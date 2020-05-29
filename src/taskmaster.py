@@ -21,12 +21,21 @@ class           Taskmaster:
         dcty = {}
         for conf in self.config:
             if (conf.get("name") and conf.get("command")):
-                command = conf["command"].split()
-                if conf.get("process_name")[0] == '%':
-                    i = conf.get("name").find(":") + 1
-                    dcty[conf.get("name")[i:]] = conf
+                if (conf.get("numprocs") != None and int(conf.get("numprocs")) > 1):
+                    for idx in range(0, int(conf.get("numprocs"))):
+                        command = conf["command"].split()
+                        if conf.get("process_name")[0] == '%':
+                            i = conf.get("name").find(":") + 1
+                            dcty[conf.get("name")[i:] + "_" + str(idx)] = conf
+                        else:
+                            dcty[conf.get("process_name")] = conf
                 else:
-                    dcty[conf.get("process_name")] = conf
+                    command = conf["command"].split()
+                    if conf.get("process_name")[0] == '%':
+                        i = conf.get("name").find(":") + 1
+                        dcty[conf.get("name")[i:]] = conf
+                    else:
+                        dcty[conf.get("process_name")] = conf
         return dcty
         
     def launch(self):
