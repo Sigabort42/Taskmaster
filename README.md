@@ -7,7 +7,7 @@ Il sera executé via le terminal et fera son travail pendant qu’il donnera l�
 
 **Commandes Disponibles**
 
-* **?** or **help**   > Afficher l'aide et les commandes disponibles
+* **?** or **help**   >Afficher l'aide et les commandes disponibles
 * **start** *name* **|** *all*  >  Demarrer un programme ou tout les programmes stoppé
 * **stop** *name* **|** *all* > Stopper un programme ou tout les programmes demarré
 * **restart** *name* **|** *all* > Redemarrer un programme ou tout les programmes stoppé
