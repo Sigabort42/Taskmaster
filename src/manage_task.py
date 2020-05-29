@@ -164,7 +164,10 @@ class   Manage:
 
     def time_sleep_graceful_stop(self, pid, name):
         time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
-        os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))
+#        print("pid", pid)
+        TAB_PROCESS[name]["ret_popen"].poll()
+        if (TAB_PROCESS[name]["ret_popen"].returncode == None):
+            os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))            
         TAB_PROCESS[name]["state"] = "STOPPED"
         print(utils.STOPPED.format(name))
 
