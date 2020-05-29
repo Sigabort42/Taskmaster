@@ -41,7 +41,9 @@ def check_proc(n):
 def receive_sig(sig_nb, frame):
     print("sig is {}".format(sig_nb))
     check_proc(sig_nb)
-        
+
+
+    
 class   Create():
     """Classe qui permet de creer des tasks"""
 
@@ -70,12 +72,11 @@ class   Create():
                 )
                 TAB_PROCESS[self.name]["ret_popen"] = out
                 TAB_PROCESS[self.name]["pid"] = out.pid
-                print(utils.STARTING.format(self.name))
+#                print(utils.STARTING.format(self.name, out.pid))
                 TAB_PROCESS[self.name]["ret_popen"].poll()                
                 TAB_PROCESS[self.name]["state"] = "RUNNING"
         os.umask(umask)
         _thread.start_new_thread(self.verif_time, (self.name, ))
-        
         
     def fork_prog(self):
         """La methode sert a  executer et recuperer les informations d'un processus enfant"""
@@ -83,7 +84,7 @@ class   Create():
             "autostart":      self.dcty[self.name]["autostart"] if "autostart"
             in self.dcty[self.name] else "",
             "autorestart":      self.dcty[self.name]["autorestart"] if "autorestart"
-            in self.dcty[self.name] else "",
+            in self.dcty[self.name] else "never",
             "command":          " ".join(self.command),
             "directory":        self.dcty[self.name]["directory"] if "directory"
             in self.dcty[self.name] else "./",
@@ -125,7 +126,7 @@ class   Create():
     def run(self):
         self.fork_prog()
 
-
+        
 class   Manage:
     """Manager de Task"""
 
@@ -161,13 +162,29 @@ class   Manage:
         print("Exit Succesfully")
         sys.exit(0)
 
-
     def time_sleep_graceful_stop(self, pid, name):
         time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
         os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))
         TAB_PROCESS[name]["state"] = "STOPPED"
         print(utils.STOPPED.format(name))
 
+    def restart_proc_unexpected(self, name):
+        i = 0
+        while (1):
+            TAB_PROCESS[name]["ret_popen"].poll()
+            n = check_proc(TAB_PROCESS[name]["ret_popen"].returncode)
+            if (n != "RUNNING" and
+                (TAB_PROCESS[name]["autorestart"] == "always" or TAB_PROCESS[name]["autorestart"] == "unexpected")):
+                if (TAB_PROCESS[name]["autorestart"] == "unexpected" and
+                    i < int(TAB_PROCESS[name]["startretries"])):
+                    if (TAB_PROCESS[name]["exitcodes"] != str(TAB_PROCESS[name]["ret_popen"].returncode)):
+                        time.sleep(2)
+                        i += 1
+                        Create(self.dcty, name).run()
+                elif TAB_PROCESS[name]["autorestart"] == "always":
+                    time.sleep(2)
+                    Create(self.dcty, name).run()
+        
     def stop(self, name_proc):
         if name_proc == "all":
             for name in list(TAB_PROCESS):
@@ -197,38 +214,45 @@ class   Manage:
                 if TAB_PROCESS[name]["state"] == "STOPPED":
                     print(utils.STARTED.format(name))
                     Create(self.dcty, name).run()
+                    _thread.start_new_thread(self.restart_proc_unexpected, (name, ))
                 elif TAB_PROCESS[name]["state"] == "FINISHED":
                     print(utils.FINISHED.format(name_proc))
                     Create(self.dcty, name).run()
+                    _thread.start_new_thread(self.restart_proc_unexpected, (name, ))
                 elif TAB_PROCESS[name]["state"] == "RUNNING":
                     print(utils.ALREADY_RUNNING.format(name))
                 else:
-                    Create(self.dcty, name_proc).run()
+                    Create(self.dcty, name).run()
+                    _thread.start_new_thread(self.restart_proc_unexpected, (name, ))
                     print(utils.STARTED.format(name_proc))
 
         elif name_proc in TAB_PROCESS:
             if TAB_PROCESS[name_proc]["state"] == "STOPPED":
                 Create(self.dcty, name_proc).run()
+                _thread.start_new_thread(self.restart_proc_unexpected, (name_proc, ))
                 print(utils.STARTED.format(name_proc))
             elif TAB_PROCESS[name_proc]["state"] == "FINISHED":
                 print(utils.FINISHED.format(name_proc))
                 Create(self.dcty, name_proc).run()
+                _thread.start_new_thread(self.restart_proc_unexpected, (name_proc, ))
                 print(utils.STARTED.format(name_proc))
             elif TAB_PROCESS[name_proc]["state"] == "RUNNING":
                 print(utils.ALREADY_RUNNING.format(name_proc))
             else:
                 Create(self.dcty, name_proc).run()
+                _thread.start_new_thread(self.restart_proc_unexpected, (name_proc, ))
                 print(utils.STARTED.format(name_proc))
 
     def run(self):
         global TAB_PROCESS
-        
         for name in self.dcty:
             if ("autostart" in self.dcty[name] and
                 self.dcty[name]["autostart"] == "true"):
                 Create(self.dcty, name).run()
+                _thread.start_new_thread(self.restart_proc_unexpected, (name, ))
             else:
                 Create(self.dcty, name).run()
+                _thread.start_new_thread(self.restart_proc_unexpected, (name, ))
                 self.stop(name)
             TAB_PROCESS[name]["ret_popen"].poll()
 
