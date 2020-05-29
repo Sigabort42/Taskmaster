@@ -7,11 +7,11 @@ Il sera executé via le terminal et fera son travail pendant qu’il donnera l�
 
 **Commandes Disponibles**
 
-* **?** or **help**   #Afficher l'aide et les commandes disponibles
-* **start** *name* | *all*   #Demarrer un programme ou tout les programmes stoppe
-* **stop** *name* **|** *all* #Stopper un programme ou tout les programmes demarre
-* **restart** *name* **|** *all* #Redemarrer un programme ou tout les programmes stoppe
-* **reload** #Recharger le fichiers de configuration et relancer les processus qui en ont besoin
+* **?** or **help**   [right]Afficher l'aide et les commandes disponibles[/right]
+* **start** *name* | *all*   [right]Demarrer un programme ou tout les programmes stoppe[/right]
+* **stop** *name* **|** *all* [right]Stopper un programme ou tout les programmes demarre[/right]
+* **restart** *name* **|** *all* [right]Redemarrer un programme ou tout les programmes stoppe[/right]
+* **reload** [right]Recharger le fichiers de configuration et relancer les processus qui en ont besoin[/right]
   * modifier la commande
   * modifier l'umask
   * modifier le directory
