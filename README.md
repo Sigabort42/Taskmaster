@@ -1,5 +1,5 @@
-# Taskmaster
-Tasmaster est un processus de job control à part entière. Il se rapproche de supervisor.
+# TaskMaster
+Taskmaster est un processus de job control à part entière. Il se rapproche de supervisor.
 
 Pour rester dans quelque chose d’assez simple, le processus ne  tourne pas en tant que root.
 
