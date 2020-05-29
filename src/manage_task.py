@@ -90,7 +90,7 @@ class   Create():
             "environment":      json.loads("{" + self.dcty[self.name]["environment"] + "}") if "environment"
             in self.dcty[self.name] else None,
             "exitcodes":        self.dcty[self.name]["exitcodes"] if "exitcodes"
-            in self.dcty[self.name] else "",
+            in self.dcty[self.name] else "0",
             "name":             self.name if self.name is not None else "",
             "numprocs":         self.dcty[self.name]["numprocs"] if "numprocs"
             in self.dcty[self.name] else "1",
@@ -163,7 +163,7 @@ class   Manage:
 
 
     def time_sleep_graceful_stop(self, pid, name):
-        time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))        
+        time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
         os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))
         TAB_PROCESS[name]["state"] = "STOPPED"
         print(utils.STOPPED.format(name))
@@ -177,12 +177,14 @@ class   Manage:
                     print(utils.FINISHED.format(name_proc))
                 else:
                     pid = TAB_PROCESS[name]["pid"]
-                    _thread.start_new_thread(self.time_sleep_graceful_stop, (pid, name, ))
+                    if ("RUNNING" in TAB_PROCESS[name]["state"]):
+                        _thread.start_new_thread(self.time_sleep_graceful_stop, (pid, name, ))
                 TAB_PROCESS[name]["ret_popen"].poll()
         elif name_proc in TAB_PROCESS:
             if TAB_PROCESS[name_proc]["state"] == "RUNNING":
                 pid = TAB_PROCESS[name_proc]["pid"]
-                _thread.start_new_thread(self.time_sleep_graceful_stop, (pid, name_proc, ))
+                if ("RUNNING" in TAB_PROCESS[name_proc]["state"]):
+                    _thread.start_new_thread(self.time_sleep_graceful_stop, (pid, name_proc, ))
             elif TAB_PROCESS[name_proc]["state"] == "FINISHED":
                 print(utils.FINISHED.format(name_proc))
             else:
@@ -219,6 +221,8 @@ class   Manage:
                 print(utils.STARTED.format(name_proc))
 
     def run(self):
+        global TAB_PROCESS
+        
         for name in self.dcty:
             if ("autostart" in self.dcty[name] and
                 self.dcty[name]["autostart"] == "true"):
@@ -226,12 +230,14 @@ class   Manage:
             else:
                 Create(self.dcty, name).run()
                 self.stop(name)
+            TAB_PROCESS[name]["ret_popen"].poll()
 
         while 1:
             prompt = input("TaskMaster $>")    
             p = prompt.split()
             if prompt == "help" or prompt == "?":
                 print(utils.COMMAND_AVAILABLE)
+                
             elif prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
@@ -243,9 +249,11 @@ class   Manage:
                         TAB_PROCESS[name]["state"],
                         TAB_PROCESS[name]["command"]
                     ))
+                    
             elif prompt.find("stop") != -1:
                 name_proc = prompt.replace("stop", "").strip()
                 self.stop(name_proc)
+                
             elif prompt.find("restart") != -1:
                 name_proc = prompt.replace("restart", "").strip()
                 secs = TAB_PROCESS[name_proc]["stopwaitsecs"]
@@ -254,12 +262,26 @@ class   Manage:
                 self.stop(name_proc)
                 self.start(name_proc)
                 TAB_PROCESS[name_proc]["stopwaitsecs"] = secs
+                
             elif prompt.find("start") != -1:
                 name_proc = prompt.replace("start", "").strip()
                 self.start(name_proc)
+                
             elif prompt.find("reload") != -1:
-                print("checker_file {}".format(self.checker_file.run()))
-#                self.checker_file
+                self.dcty, TAB_PROCESS, name_modify = utils.compare_file_reload(self.dcty, self.checker_file.run(), TAB_PROCESS)
+                print("TAPROCESS", TAB_PROCESS)
+                for name in self.dcty:
+                    if name not in list(TAB_PROCESS) or name in name_modify:
+                        Create(self.dcty, name).run()
+                        
+            elif prompt.find("info") != -1:
+                name_proc = prompt.replace("info", "").strip()
+                if name_proc in list(TAB_PROCESS):
+                    print(utils.INFO_PROC.format(name_proc))
+                    for k, v in TAB_PROCESS[name_proc].items():
+                        if k != "ret_popen":
+                            print("{}={}".format(k, v))
+
             elif prompt == "exit":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["stopwaitsecs"] = "0"
