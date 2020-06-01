@@ -27,15 +27,15 @@ def check_proc(n):
         return "HUP"
     elif n == -2:
         return "INTERRUPT"
-    elif n == -3:
+    elif n == -3 or n == 3:
         return "QUIT"
-    elif n == -6:
+    elif n == -6 or n == 6:
         return "SIGABORT"
-    elif n == -9:
+    elif n == -9 or n == 9:
         return "STOPPED"
-    elif n == -14:
+    elif n == -14 or n == 14:
         return "ALARM"
-    elif n == -15:
+    elif n == -15 or n == 15:
         return "STOPPED"
     elif n > 0:
         return "ERROR: " + str(n)
@@ -45,14 +45,15 @@ def receive_sig(sig_nb, frame):
     print("sig is {}".format(sig_nb))
     check_proc(sig_nb)
 
-
+STDOUT_V = ""
     
 class   Create():
     """Classe qui permet de creer des tasks"""
 
-    def __init__(self, dcty, name):
+    def __init__(self, dcty, name, i_retries=0):
         self.dcty = dcty
         self.name = name
+        self.i_retries = i_retries
         self.command = list(map(utils.retablir_str, dcty[name]["command"].split()))
         self.args = " ".join(dcty[name]["command"].split()[1:])
 
@@ -62,7 +63,7 @@ class   Create():
         TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
         TAB_PROCESS[name]["state"] = "RUNNING" if TAB_PROCESS[name]["ret_popen"].returncode == None else "ERROR: Exited too quickly (process log may have details)"
 
-    async def start_process(self):
+    def start_process(self):
         umask = os.umask(TAB_PROCESS[self.name]["umask"])
         os.chdir(TAB_PROCESS[self.name]["directory"])
         with open(TAB_PROCESS[self.name]["stdout"], "a") as fout:
@@ -81,7 +82,6 @@ class   Create():
                 TAB_PROCESS[self.name]["returncode"] = TAB_PROCESS[self.name]["ret_popen"].returncode
                 TAB_PROCESS[self.name]["state"] = "RUNNING"
         os.umask(umask)
-#        TAB_THREAD[out.pid]["verif_time"] = _thread.start_new_thread(self.verif_time, (self.name, ))
         
     def fork_prog(self):
         """La methode sert a  executer et recuperer les informations d'un processus enfant"""
@@ -108,9 +108,10 @@ class   Create():
             in self.dcty[self.name] else "true",
             "redirect_stderr":  self.dcty[self.name]["redirect_stderr"] if "redirect_stderr"
             in self.dcty[self.name] else "true",
-            "returncode":       "lolol",
+            "returncode":       "0",
             "startretries":           self.dcty[self.name]["startretries"] if "startretries"
             in self.dcty[self.name] else "0",
+            "i_retries":        self.i_retries,
             "startsecs":           self.dcty[self.name]["startsecs"] if "startsecs"
             in self.dcty[self.name] else "0",
             "state":             "STARTING",
@@ -129,7 +130,7 @@ class   Create():
             TAB_PROCESS[self.name]["stdout"] = "/dev/null"
         if (TAB_PROCESS[self.name]["redirect_stderr"] == "false"):
             TAB_PROCESS[self.name]["stderr"] = "/dev/null"
-        asyncio.run(self.start_process())
+        self.start_process()
         
     def run(self):
         self.fork_prog()
@@ -151,14 +152,11 @@ class   Manage:
         signal.signal(signal.SIGINT, self.receive_sigT)
         signal.signal(signal.SIGQUIT, self.receive_sigT)
         signal.signal(signal.SIGILL, receive_sig)
-        signal.signal(signal.SIGTRAP, receive_sig)
         signal.signal(signal.SIGABRT, receive_sig)
         signal.signal(signal.SIGBUS, receive_sig)
         signal.signal(signal.SIGFPE, receive_sig)
-        #signal.signal(signal.SIGKILL, receive_sig)
-        signal.signal(signal.SIGUSR1, receive_sig)
+        signal.signal(signal.SIGCHLD, self.receive_sigC)
         signal.signal(signal.SIGSEGV, receive_sig)
-        signal.signal(signal.SIGUSR2, receive_sig)
         signal.signal(signal.SIGPIPE, receive_sig)
         signal.signal(signal.SIGALRM, receive_sig)
         signal.signal(signal.SIGTERM, self.receive_sigT)
@@ -170,40 +168,29 @@ class   Manage:
         print("Exit Succesfully")
         sys.exit(0)
 
-    def time_sleep_graceful_stop(self, pid, name):
-        time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
-        TAB_PROCESS[name]["ret_popen"].poll()
-        TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
-        if (TAB_PROCESS[name]["ret_popen"].returncode == None):
-            os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))            
-        TAB_PROCESS[name]["state"] = "STOPPED"
-        print(utils.STOPPED.format(name))
+    def receive_sigC(self, sig_nb, frame):
+        pid_info = os.wait3(os.WNOHANG)
+        name = ""
+        for n in list(TAB_PROCESS):
+#            print("pidddd", n, pid_info)
+            if TAB_PROCESS[n]["pid"] == pid_info[0]:
+                name = n
+                break
 
-    def restart_proc_unexpected(self, name):
-        i = 0
-        re_email = re.compile("([^@]+@[^@]+\.[^@]+)")
-        while (1):
-            true_pid = TAB_PROCESS[name]["pid"] != ""
-            if (true_pid):
-                try:
-                    TAB_PROCESS[name]["ret_popen"].poll()
-                    n = check_proc(TAB_PROCESS[name]["ret_popen"].returncode)
-                except AttributeError as error:
-                    n = check_proc(int(TAB_PROCESS[name]["returncode"]))
-
-#                TAB_THREAD[str(TAB_PROCESS[name]["pid"])]["restart_proc_unexpected"].interrupt_main()
-                if (n != "RUNNING" and (TAB_PROCESS[name]["autorestart"] == "always" or TAB_PROCESS[name]["autorestart"] == "unexpected")):
-                    if (TAB_PROCESS[name]["autorestart"] == "unexpected" and
-                        i < int(TAB_PROCESS[name]["startretries"])):
-                        if (TAB_PROCESS[name]["exitcodes"] != str(TAB_PROCESS[name]["returncode"])):
-                            time.sleep(2)
-                            i += 1
-                            Create(self.dcty, name).run()
-                    elif (TAB_PROCESS[name]["autorestart"] == "unexpected" and
-                          i == int(TAB_PROCESS[name]["startretries"]) and
+        if name != "":
+            TAB_PROCESS[name]["returncode"] = 1 if pid_info[1] == 256 else pid_info[1];
+            if ((TAB_PROCESS[name]["autorestart"] == "unexpected" or
+                TAB_PROCESS[name]["autorestart"] == "always") and
+                TAB_PROCESS[name]["exitcodes"] != str(TAB_PROCESS[name]["returncode"])):
+                re_email = re.compile("([^@]+@[^@]+\.[^@]+)")
+                if TAB_PROCESS[name]["autorestart"] == "always":
+                    Create(self.dcty, name).run()
+                elif (TAB_PROCESS[name]["autorestart"] == "unexpected"):
+                    if (TAB_PROCESS[name]["i_retries"] < int(TAB_PROCESS[name]["startretries"])):
+                        Create(self.dcty, name, TAB_PROCESS[name]["i_retries"] + 1).run()
+                    elif (TAB_PROCESS[name]["i_retries"] == int(TAB_PROCESS[name]["startretries"]) and
                           "mail_report" in TAB_PROCESS[name] and
                           re_email.match(TAB_PROCESS[name]["mail_report"])):
-                        i += 1
                         dest = TAB_PROCESS[name]["mail_report"]
                         serveur = smtplib.SMTP('smtp.gmail.com', 587)
                         serveur.ehlo()
@@ -216,10 +203,17 @@ class   Manage:
                         serveur.sendmail("allinplans@gmail.com", dest, message)
                         serveur.quit()
 
-                    elif TAB_PROCESS[name]["autorestart"] == "always":
-                        time.sleep(2)
-                        Create(self.dcty, name).run()
-        
+            
+    def time_sleep_graceful_stop(self, pid, name):
+        time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
+        TAB_PROCESS[name]["ret_popen"].poll()
+        TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
+        if (TAB_PROCESS[name]["ret_popen"].returncode == None):
+            os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))            
+        TAB_PROCESS[name]["state"] = "STOPPED"
+        print(utils.STOPPED.format(name))
+
+
     def stop(self, name_proc):
         if name_proc == "all":
             for name in list(TAB_PROCESS):
@@ -249,34 +243,28 @@ class   Manage:
             for name in list(TAB_PROCESS):
                 if TAB_PROCESS[name]["state"] == "STOPPED":
                     print(utils.STARTED.format(name))
-                    Create(self.dcty, name).run()
-                    TAB_THREAD[TAB_PROCESS[name]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name, ))}
+                    Create(self.dcty, name, 0).run()
                 elif TAB_PROCESS[name]["state"] == "FINISHED":
                     print(utils.FINISHED.format(name_proc))
-                    Create(self.dcty, name).run()
-                    TAB_THREAD[TAB_PROCESS[name]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name, ))}
+                    Create(self.dcty, name, 0).run()
                 elif TAB_PROCESS[name]["state"] == "RUNNING":
                     print(utils.ALREADY_RUNNING.format(name))
                 else:
-                    Create(self.dcty, name).run()
-                    TAB_THREAD[TAB_PROCESS[name]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name, ))}
+                    Create(self.dcty, name, 0).run()
                     print(utils.STARTED.format(name_proc))
 
         elif name_proc in TAB_PROCESS:
             if TAB_PROCESS[name_proc]["state"] == "STOPPED":
-                Create(self.dcty, name_proc).run()
-                TAB_THREAD[TAB_PROCESS[name_proc]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name_proc, ))}                
+                Create(self.dcty, name_proc, 0).run()
                 print(utils.STARTED.format(name_proc))
             elif TAB_PROCESS[name_proc]["state"] == "FINISHED":
                 print(utils.FINISHED.format(name_proc))
-                Create(self.dcty, name_proc).run()
-                TAB_THREAD[TAB_PROCESS[name_proc]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name_proc, ))}
+                Create(self.dcty, name_proc, 0).run()
                 print(utils.STARTED.format(name_proc))
             elif TAB_PROCESS[name_proc]["state"] == "RUNNING":
                 print(utils.ALREADY_RUNNING.format(name_proc))
             else:
-                Create(self.dcty, name_proc).run()
-                TAB_THREAD[TAB_PROCESS[name_proc]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name_proc, ))}
+                Create(self.dcty, name_proc, 0).run()
                 print(utils.STARTED.format(name_proc))
 
     def run(self):
@@ -284,11 +272,9 @@ class   Manage:
         for name in self.dcty:
             if ("autostart" in self.dcty[name] and
                 self.dcty[name]["autostart"] == "true"):
-                Create(self.dcty, name).run()
-                TAB_THREAD[TAB_PROCESS[name]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name, ))}
+                Create(self.dcty, name, 0).run()
             else:
-                Create(self.dcty, name).run()
-                TAB_THREAD[TAB_PROCESS[name]["pid"]] = {"restart_proc_unexpected": _thread.start_new_thread(self.restart_proc_unexpected, (name, ))}
+                Create(self.dcty, name, 0).run()
                 self.stop(name)
             TAB_PROCESS[name]["ret_popen"].poll()
             TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
@@ -301,9 +287,10 @@ class   Manage:
                 
             elif prompt == "status":
                 for name in list(TAB_PROCESS):
-                    TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
-                    if "Exited" not in TAB_PROCESS[name]["state"] and "FINISHED" not in TAB_PROCESS[name]["state"]:
-                        TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["ret_popen"].returncode) 
+                    TAB_PROCESS[name]["ret_popen"].poll()
+                    print("return ", TAB_PROCESS[name]["returncode"])
+                    if "Exited" not in TAB_PROCESS[name]["state"]:
+                        TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["returncode"]) 
                     print(utils.CMD_STATUS.format(
                         name,
                         TAB_PROCESS[name]["pid"],
@@ -326,7 +313,6 @@ class   Manage:
                 
             elif prompt.find("start") != -1:
                 TAB_PROCESS[name]["ret_popen"].poll()
-                TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
                 name_proc = prompt.replace("start", "").strip()
                 self.start(name_proc)
                 
@@ -334,7 +320,7 @@ class   Manage:
                 self.dcty, TAB_PROCESS, name_modify = utils.compare_file_reload(self.dcty, self.checker_file.run(), TAB_PROCESS)
                 for name in self.dcty:
                     if name not in list(TAB_PROCESS) or name in name_modify:
-                        Create(self.dcty, name).run()
+                        Create(self.dcty, name, TAB_PROCESS[name]["i_retries"]).run()
                         
             elif prompt.find("info") != -1:
                 name_proc = prompt.replace("info", "").strip()
