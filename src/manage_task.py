@@ -21,6 +21,7 @@ TAB_PROCESS = {}
 TAB_THREAD = {}
 
 def check_proc(n):
+    """Fonction qui return le type de code de retour d'un processus"""
     if n == None:
         return "RUNNING"
     if n == -1:
@@ -42,7 +43,7 @@ def check_proc(n):
     return "FINISHED"
 
 def receive_sig(sig_nb, frame):
-    print("sig is {}".format(sig_nb))
+    """Fonction qui check le type de retour d'un processus fils"""
     check_proc(sig_nb)
 
 STDOUT_V = ""
@@ -58,12 +59,14 @@ class   Create():
         self.args = " ".join(dcty[name]["command"].split()[1:])
 
     def verif_time(self, name):
+        """Methode qui verifie si un processus est toujours lancer apres un temps donné"""
         time.sleep(int(TAB_PROCESS[name]["startsecs"]))
         TAB_PROCESS[name]["ret_popen"].poll()
         TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
         TAB_PROCESS[name]["state"] = "RUNNING" if TAB_PROCESS[name]["ret_popen"].returncode == None else "ERROR: Exited too quickly (process log may have details)"
 
     def start_process(self):
+        """Methode qui lance un processus enfant avec ses parametres"""
         umask = os.umask(TAB_PROCESS[self.name]["umask"])
         os.chdir(TAB_PROCESS[self.name]["directory"])
         with open(TAB_PROCESS[self.name]["stdout"], "a") as fout:
@@ -148,6 +151,7 @@ class   Manage:
 
 
     def handler_sig(self):
+        """Methode qui recoit les signaux et agit en consequence"""
         signal.signal(signal.SIGHUP, receive_sig)
         signal.signal(signal.SIGINT, self.receive_sigT)
         signal.signal(signal.SIGQUIT, self.receive_sigT)
@@ -162,13 +166,14 @@ class   Manage:
         signal.signal(signal.SIGTERM, self.receive_sigT)
 
     def receive_sigT(self, sig_nb, frame):
-        print("sigtttt is {}".format(sig_nb))
+        """Methode qui intercepte le signal TERM et qui stop tout les processus enfant et quitte le TaskMaster"""
         for name in list(TAB_PROCESS):
             self.stop(name)
         print("Exit Succesfully")
         sys.exit(0)
 
     def receive_sigC(self, sig_nb, frame):
+        """Methode qui intercepte le signal CHILD et qui relance le processus selon les conditions du fichier de conf ou qui envoi un mail a 'mail_report(voir fichier de conf)'"""
         pid_info = os.wait3(os.WNOHANG)
         name = ""
         for n in list(TAB_PROCESS):
@@ -204,6 +209,7 @@ class   Manage:
 
             
     def time_sleep_graceful_stop(self, pid, name):
+        """Methode qui va kill un processus enfant apres un temps donnée avec un graceful stop"""
         time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
         TAB_PROCESS[name]["ret_popen"].poll()
         TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
@@ -214,6 +220,7 @@ class   Manage:
 
 
     def stop(self, name_proc):
+        """Methode qui est executé au lancement de la commande stop"""
         if name_proc == "all":
             for name in list(TAB_PROCESS):
                 if TAB_PROCESS[name]["state"] == "STOPPED":
@@ -238,6 +245,7 @@ class   Manage:
             TAB_PROCESS[name_proc]["ret_popen"].poll()
 
     def start(self, name_proc):
+        """Methode qui est executé au lancement de la commande start"""
         if name_proc == "all":
             for name in list(TAB_PROCESS):
                 if TAB_PROCESS[name]["state"] == "STOPPED":
@@ -267,6 +275,7 @@ class   Manage:
                 print(utils.STARTED.format(name_proc))
 
     def run(self):
+        """Methode qui est executé au lancement dun TaskMaster"""
         global TAB_PROCESS
         for name in self.dcty:
             if ("autostart" in self.dcty[name] and
@@ -287,7 +296,6 @@ class   Manage:
             elif prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
-#                    print("return ", TAB_PROCESS[name]["returncode"])
                     if "Exited" not in TAB_PROCESS[name]["state"]:
                         TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["returncode"]) 
                     print(utils.CMD_STATUS.format(

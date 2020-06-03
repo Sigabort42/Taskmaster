@@ -11,10 +11,11 @@ class Checker_file:
         self.config = ""
         
     def __del__(self):
-        print("Del Checker_file")
+        pass
 
 
     def     verify_char_in_str(self, s):
+        """Methode qui verifie un char dans une string"""
         re_s = re.compile('(\".*\"|\'.*\')')
         if re_s.search(s):
             s_re = re_s.search(s).group().replace(" ", "_")
@@ -22,6 +23,7 @@ class Checker_file:
         return s
 
     def     verify_file_conf(self, path_file):
+        """Methode qui verifie que le fichier de conf est bien formatté"""
         with open(path_file) as file:
             re_p = re.compile("(\[.*\])")
             re_c = re.compile("(^\w.*)=(.*) ;")

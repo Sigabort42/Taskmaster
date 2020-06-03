@@ -22,4 +22,3 @@ if __name__ == "__main__":
     path_file = os.path.abspath(PARSER.parse_args().c)
     conf = checker_file.Checker_file(PARSER, path_file).run()
     manage_task.Manage(conf, PARSER, path_file).run()
-#    print("conf {}".format(conf))
