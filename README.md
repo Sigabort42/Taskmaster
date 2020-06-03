@@ -14,8 +14,3 @@ Il sera executé via le terminal et fera son travail pendant qu’il donnera l�
 * `TaskMaster $>stop name|all` **Stopper un programme ou tout les programmes demarré**
 * `TaskMaster $>restart name|all` **Redemarrer un programme ou tout les programmes stoppé**
 * `TaskMaster $>reload` **Recharger le fichiers de configuration et relancer les processus qui en ont besoin**
-  * modifier la commande
-  * modifier l'umask
-  * modifier le directory
-  * modifier les stdout, stderr
-  * modifier l'environnement
