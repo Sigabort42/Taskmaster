@@ -116,9 +116,9 @@ class   Create():
             in self.dcty[self.name] else "0",
             "state":             "STARTING",
             "stdout":           self.dcty[self.name]["stdout_logfile"] if "stdout_logfile"
-            in self.dcty[self.name] else "/dev/fd/1",
+            in self.dcty[self.name] else "/dev/null",
             "stderr":           self.dcty[self.name]["stderr_logfile"] if "stderr_logfile"
-            in self.dcty[self.name] else "/dev/fd/2",
+            in self.dcty[self.name] else "/dev/null",
             "stopsignal":       self.dcty[self.name]["stopsignal"] if "stopsignal"
             in self.dcty[self.name] else "TERM",
             "stopwaitsecs":     self.dcty[self.name]["stopwaitsecs"] if "stopwaitsecs"
@@ -172,7 +172,6 @@ class   Manage:
         pid_info = os.wait3(os.WNOHANG)
         name = ""
         for n in list(TAB_PROCESS):
-#            print("pidddd", n, pid_info)
             if TAB_PROCESS[n]["pid"] == pid_info[0]:
                 name = n
                 break
@@ -288,7 +287,7 @@ class   Manage:
             elif prompt == "status":
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["ret_popen"].poll()
-                    print("return ", TAB_PROCESS[name]["returncode"])
+#                    print("return ", TAB_PROCESS[name]["returncode"])
                     if "Exited" not in TAB_PROCESS[name]["state"]:
                         TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["returncode"]) 
                     print(utils.CMD_STATUS.format(
