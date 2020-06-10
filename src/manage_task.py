@@ -24,6 +24,7 @@ MAIL_LOGIN       = ""
 MAIL_PASSWD     = ""
 
 
+
 class   Manage:
     """Manager de Task"""
 
