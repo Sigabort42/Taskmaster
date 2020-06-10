@@ -2,7 +2,7 @@
 
 import signal
 
-COMMAND_AVAILABLE = "========================================\n\tcommands available are:\n========================================\n{start [name|all]}\t{stop [name|all]}\t{restart [name|all]}\n{help}\t{status}\n"
+COMMAND_AVAILABLE = "========================================\n\tcommands available are:\n========================================\n{start [name|all]}\t{stop [name|all]}\n{restart [name|all]}\t{info [name program]}\n{help}\t\t\t{status}\n"
 
 ALREADY_STOPPED = "\n-----------------------------\n{}: Already Stopped\n-----------------------------\n"
 
@@ -19,6 +19,34 @@ ALREADY_RUNNING = "\n-----------------------------\n{}: Already Running\n-------
 CMD_STATUS = "\n{} [{}]\t\t\t[{}]\ncommand is [{}]\n"
 
 INFO_PROC = "----------------------------- Informations: {}-----------------------------"
+
+
+def receive_sig(sig_nb, frame):
+    """Fonction qui check le type de retour d'un processus fils"""
+    check_proc(sig_nb)
+
+def check_proc(n):
+    """Fonction qui return le type de code de retour d'un processus"""
+    if n == None:
+        return "RUNNING"
+    if n == -1:
+        return "HUP"
+    elif n == -2:
+        return "INTERRUPT"
+    elif n == -3 or n == 3:
+        return "QUIT"
+    elif n == -6 or n == 6:
+        return "SIGABORT"
+    elif n == -9 or n == 9:
+        return "STOPPED"
+    elif n == -14 or n == 14:
+        return "ALARM"
+    elif n == -15 or n == 15:
+        return "STOPPED"
+    elif n > 0:
+        return "ERROR: " + str(n)
+    return "FINISHED"
+
 
 def retablir_str(s):
     if s.find("\"") != -1:
