@@ -20,6 +20,9 @@ from src import utils
 from src import checker_file
 
 
+MAIL_LOGIN       = ""
+MAIL_PASSWD     = ""
+
 
 class   Manage:
     """Manager de Task"""
@@ -82,11 +85,11 @@ class   Manage:
                         serveur.ehlo()
                         serveur.starttls()
                         serveur.ehlo()
-                        serveur.login("allinplans@gmail.com", "Okokokok8")
+                        serveur.login(MAIL_LOGIN, MAIL_PASSWD)
                         message = "Le programme {} sous le pid {} a ete arrete".format(
                             name,
                             TAB_PROCESS[name]["pid"])
-                        serveur.sendmail("allinplans@gmail.com", dest, message)
+                        serveur.sendmail(MAIL_LOGIN, dest, message)
                         serveur.quit()
 
             
