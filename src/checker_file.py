@@ -2,6 +2,8 @@
 
 import re
 
+
+
 class Checker_file:
     """Classe qui permet de checker un fichier .conf et de le formater dans un dictionnaire"""
 
