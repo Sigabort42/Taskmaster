@@ -5,7 +5,7 @@ import re
 
 
 class Checker_file:
-    """Classe qui permet de checker un fichier .conf et de le formater dans un dictionnaire"""
+    """Classe qui permet de checker un fichier .conf au format yaml et de le formater dans un dictionnaire"""
 
     def __init__(self, parser, path_file="/etc/taskmaster.conf"):
         self.args = parser.parse_args()
