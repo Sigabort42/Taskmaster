@@ -7,10 +7,10 @@ Il sera executé via le terminal et fera son travail pendant qu’il donnera l�
 
 **Commandes Disponibles**
 
-* `TaskMaster $>?` or `TaskMaster $>help` **Afficher l'aide et les commandes disponibles**
-* `TaskMaster $>status`  **Voir le details des processus lancé**
-* `TaskMaster $>info name` **Toutes les informations de configuration du processus {*name*}**
-* `TaskMaster $>start name|all` **Demarrer un programme ou tout les programmes stoppé**
-* `TaskMaster $>stop name|all` **Stopper un programme ou tout les programmes demarré**
-* `TaskMaster $>restart name|all` **Redemarrer un programme ou tout les programmes stoppé**
-* `TaskMaster $>reload` **Recharger le fichiers de configuration et relancer les processus qui en ont besoin**
+- [ ] `TaskMaster $>?` or `TaskMaster $>help` **Afficher l'aide et les commandes disponibles**
+- [ ] `TaskMaster $>status`  **Voir le details des processus lancé**
+- [ ] `TaskMaster $>info name` **Toutes les informations de configuration du processus {*name*}**
+- [ ] `TaskMaster $>start name|all` **Demarrer un programme ou tout les programmes stoppé**
+- [ ] `TaskMaster $>stop name|all` **Stopper un programme ou tout les programmes demarré**
+- [ ] `TaskMaster $>restart name|all` **Redemarrer un programme ou tout les programmes stoppé**
+- [ ] `TaskMaster $>reload` **Recharger le fichiers de configuration et relancer les processus qui en ont besoin**
