@@ -1,9 +1,20 @@
 # TaskMaster
-Taskmaster est un processus de job control à part entière. Il se rapproche de supervisor.
+Taskmaster est un processus de job control à part entière. Il se rapproche de supervisor.
 
 Pour rester dans quelque chose d’assez simple, le processus ne  tourne pas en tant que root.
 
-Il sera executé via le terminal et fera son travail pendant qu’il donnera l’accès au shell à l’utilisateur.
+Il sera executé via le terminal et fera son travail pendant qu’il donnera l’accès au shell à l’utilisateur.
+
+Configure file
+```bash
+nano taskmaster.conf
+```
+
+Launch
+```bash
+chmod +x main.py
+./main.py -c taskmaster.conf
+```
 
 **Commandes Disponibles**
 
