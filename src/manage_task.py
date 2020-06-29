@@ -1,3 +1,15 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    manage_task.py                                     :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: elbenkri <elbenkri@student.42.fr>          +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2020/06/30 00:53:25 by elbenkri          #+#    #+#              #
+#    Updated: 2020/06/30 00:53:27 by elbenkri         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
 #!/usr/bin/env python3
 
 import smtplib
@@ -20,8 +32,8 @@ from src import utils
 from src import checker_file
 
 
-MAIL_LOGIN       = ""
-MAIL_PASSWD     = ""
+MAIL_LOGIN              = ""
+MAIL_PASSWD             = ""
 
 
 

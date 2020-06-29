@@ -1,8 +1,20 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    utils.py                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: elbenkri <elbenkri@student.42.fr>          +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2020/06/30 00:53:40 by elbenkri          #+#    #+#              #
+#    Updated: 2020/06/30 00:53:41 by elbenkri         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
 #!/usr/bin/env python3
 
 import signal
 
-COMMAND_AVAILABLE = "========================================\n\tcommands available are:\n========================================\n{start [name|all]}\t{stop [name|all]}\n{restart [name|all]}\t{info [name program]}\n{help}\t\t\t{status}\n"
+COMMAND_AVAILABLE = "========================================\n\tcommands available are:\n========================================\n{start [name|all]}\t{stop [name|all]}\n{restart [name|all]}\t{info [name program]}\n{? or help}\t\t\t{status}\n"
 
 ALREADY_STOPPED = "\n-----------------------------\n{}: Already Stopped\n-----------------------------\n"
 
