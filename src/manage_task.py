@@ -83,8 +83,9 @@ class   Manage:
                 name = n
                 break
 
-        REPORT.warning("Intercept signal CHILD on " + name)
         if name != "":
+            REPORT.warning("Intercept signal CHILD on " + name)
+            TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["returncode"])
             TAB_PROCESS[name]["returncode"] = 1 if pid_info[1] == 256 else pid_info[1]
             if ((TAB_PROCESS[name]["autorestart"] == "unexpected" or
                 TAB_PROCESS[name]["autorestart"] == "always") and
@@ -234,10 +235,12 @@ class   Manage:
                 self.start(name_proc)
                 
             elif prompt.find("reload") != -1:
-                self.dcty, TAB_PROCESS, name_modify = utils.compare_file_reload(self.dcty, self.checker_file.run(), TAB_PROCESS)
+                [self.dcty, TAB_PROCESS, name_modify] = utils.compare_file_reload(self.dcty, self.checker_file.run(), TAB_PROCESS)
                 for name in self.dcty:
                     if name not in list(TAB_PROCESS) or name in name_modify:
-                        Create(self.dcty, name, TAB_PROCESS[name]["i_retries"]).run()
+                        # print("RELOADDDDD", TAB_PROCESS, "lololol", TAB_PROCESS)
+                        Create(self.dcty, name, 0).run()
+                        TAB_PROCESS[name]["state"] = check_proc(TAB_PROCESS[name]["returncode"])
                         
             elif prompt.find("info") != -1:
                 name_proc = prompt.replace("info", "").strip()

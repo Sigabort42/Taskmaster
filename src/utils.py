@@ -181,6 +181,7 @@ def return_data_file(prev_dcty, new_dcty, name_prev, name_data, default_data):
 
 
 def compare_file_reload(prev_dcty, new_dcty, TAB_PROCESS):
+    REPORT.info("Reloading file...")
     dcty_change = {}
     name_modify = []
     if prev_dcty != new_dcty:
@@ -201,13 +202,16 @@ def compare_file_reload(prev_dcty, new_dcty, TAB_PROCESS):
                         TAB_PROCESS[name_prev]["stopsignal"] = return_data_file(prev_dcty, new_dcty, name_prev, "stopsignal", "TERM") 
                         dcty_change[name_prev] = new_dcty[name_prev]
                     else:
-                        TAB_PROCESS[name_prev]["ret_popen"].send_signal(signal.SIGTERM)
+                        TAB_PROCESS[name_prev]["state"] = check_proc(TAB_PROCESS[name_prev]["returncode"])
+                        if TAB_PROCESS[name_prev]["state"] == "RUNNING":
+                            TAB_PROCESS[name_prev]["ret_popen"].send_signal(signal.SIGTERM)
                         print(STOPPED.format(name_prev))
                         dcty_change[name_prev] = new_dcty[name_prev]
                         name_modify.append(name_prev)
             else:
-                print(STOPPED.format(name_prev))
-                TAB_PROCESS[name_prev]["ret_popen"].send_signal(signal.SIGTERM)
+                TAB_PROCESS[name_prev]["state"] = check_proc(TAB_PROCESS[name_prev]["returncode"])
+                if TAB_PROCESS[name_prev]["state"] == "RUNNING":
+                    TAB_PROCESS[name_prev]["ret_popen"].send_signal(signal.SIGTERM)
                 del TAB_PROCESS[name_prev]
-
+    REPORT.success("Reloading file...")
     return (dcty_change, TAB_PROCESS, name_modify)
