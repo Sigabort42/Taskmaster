@@ -14,6 +14,8 @@
 
 import signal
 
+from src.reporter import Reporter
+
 COMMAND_AVAILABLE = "========================================\n\tcommands available are:\n========================================\n{start [name|all]}\t{stop [name|all]}\n{restart [name|all]}\t{info [name program]}\n{? or help}\t\t\t{status}\n"
 
 ALREADY_STOPPED = "\n-----------------------------\n{}: Already Stopped\n-----------------------------\n"
@@ -21,6 +23,8 @@ ALREADY_STOPPED = "\n-----------------------------\n{}: Already Stopped\n-------
 STOPPED = "\n-----------------------------\n{}: Stopped\n-----------------------------"
 
 FINISHED = "\n-----------------------------\n{}: Finished\n-----------------------------\n"
+
+ALREADY_FINISHED = "\n-----------------------------\n{}: Already Finished\n-----------------------------\n"
 
 STARTING = "\n-----------------------------\nStarting {} {}\n-----------------------------\n"
 
@@ -31,6 +35,9 @@ ALREADY_RUNNING = "\n-----------------------------\n{}: Already Running\n-------
 CMD_STATUS = "\n{} [{}]\t\t\t[{}]\ncommand is [{}]\n"
 
 INFO_PROC = "----------------------------- Informations: {}-----------------------------"
+
+fd = open("./taskmaster.log", "a")
+REPORT = Reporter(fd)
 
 
 def receive_sig(sig_nb, frame):

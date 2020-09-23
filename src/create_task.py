@@ -16,12 +16,11 @@ import json
 import os
 import subprocess
 
-
 from src import utils
+from src.utils import REPORT
 
 
 TAB_PROCESS = {}
-
 
 
 class   Create():
@@ -33,13 +32,19 @@ class   Create():
         self.i_retries = i_retries
         self.command = list(map(utils.retablir_str, dcty[name]["command"].split()))
         self.args = " ".join(dcty[name]["command"].split()[1:])
+        REPORT.info("Launching create task in progess...[" + name + "]")
 
     def verif_time(self, name):
         """Methode qui verifie si un processus est toujours lancer apres un temps donné"""
+        REPORT.info("Task " + name + " Checking time...")
         time.sleep(int(TAB_PROCESS[name]["startsecs"]))
         TAB_PROCESS[name]["ret_popen"].poll()
         TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
         TAB_PROCESS[name]["state"] = "RUNNING" if TAB_PROCESS[name]["ret_popen"].returncode == None else "ERROR: Exited too quickly (process log may have details)"
+        if TAB_PROCESS[name]["state"] == "RUNNING":
+            REPORT.info("Task " + name + " Checking time done ✅")
+        else:
+            REPORT.error("Task " + name + " Checking time error ❌")
 
     def start_process(self):
         """Methode qui lance un processus enfant avec ses parametres"""
@@ -61,10 +66,11 @@ class   Create():
                 TAB_PROCESS[self.name]["returncode"] = TAB_PROCESS[self.name]["ret_popen"].returncode
                 TAB_PROCESS[self.name]["state"] = "RUNNING"
         os.umask(umask)
+        REPORT.info("Launching create task done ✅ [" + self.name + "]")
 
 
     def fork_prog(self):
-        """La methode sert a  executer et recuperer les informations d'un processus enfant"""
+        """La methode sert a executer et recuperer les informations d'un processus enfant"""
         TAB_PROCESS[self.name] = {
             "autostart":      self.dcty[self.name]["autostart"] if "autostart"
             in self.dcty[self.name] else "",

@@ -28,6 +28,7 @@ from src.create_task import Create
 from src.create_task import TAB_PROCESS
 from src.utils import check_proc
 from src.utils import receive_sig
+from src.utils import REPORT
 from src import utils
 from src import checker_file
 
@@ -39,13 +40,13 @@ MAIL_PASSWD             = ""
 
 class   Manage:
     """Manager de Task"""
-
     def __init__(self, dcty, parser, path_file):
         self.dcty = dcty
         self.parser = parser
         self.checker_file = checker_file.Checker_file(parser, path_file)
         self.path_file = path_file
         self.handler_sig()
+        REPORT.info("Launching Taskmaster")
 
 
     def handler_sig(self):
@@ -65,9 +66,12 @@ class   Manage:
 
     def receive_sigT(self, sig_nb, frame):
         """Methode qui intercepte le signal TERM et qui stop tout les processus enfant et quitte le TaskMaster"""
+        REPORT.warning("Intercept signal TERM")
+        REPORT.info("Kill all process...")
         for name in list(TAB_PROCESS):
             self.stop(name)
         print("Exit Succesfully")
+        REPORT.sucess("Kill all process")
         sys.exit(0)
 
     def receive_sigC(self, sig_nb, frame):
@@ -79,20 +83,24 @@ class   Manage:
                 name = n
                 break
 
+        REPORT.warning("Intercept signal CHILD on " + name)
         if name != "":
-            TAB_PROCESS[name]["returncode"] = 1 if pid_info[1] == 256 else pid_info[1];
+            TAB_PROCESS[name]["returncode"] = 1 if pid_info[1] == 256 else pid_info[1]
             if ((TAB_PROCESS[name]["autorestart"] == "unexpected" or
                 TAB_PROCESS[name]["autorestart"] == "always") and
                 TAB_PROCESS[name]["exitcodes"] != str(TAB_PROCESS[name]["returncode"])):
                 re_email = re.compile("([^@]+@[^@]+\.[^@]+)")
                 if TAB_PROCESS[name]["autorestart"] == "always":
+                    REPORT.info("Restarting task: " + name)
                     Create(self.dcty, name).run()
                 elif (TAB_PROCESS[name]["autorestart"] == "unexpected"):
                     if (TAB_PROCESS[name]["i_retries"] < int(TAB_PROCESS[name]["startretries"])):
+                        REPORT.info("Restarting task: " + name)
                         Create(self.dcty, name, TAB_PROCESS[name]["i_retries"] + 1).run()
-                    elif (TAB_PROCESS[name]["i_retries"] == int(TAB_PROCESS[name]["startretries"]) and
+                    elif (TAB_PROCESS[name]["i_retries"] >= int(TAB_PROCESS[name]["startretries"]) and
                           "mail_report" in TAB_PROCESS[name] and
                           re_email.match(TAB_PROCESS[name]["mail_report"])):
+                        REPORT.info("Sending email...")
                         dest = TAB_PROCESS[name]["mail_report"]
                         serveur = smtplib.SMTP('smtp.gmail.com', 587)
                         serveur.ehlo()
@@ -104,69 +112,72 @@ class   Manage:
                             TAB_PROCESS[name]["pid"])
                         serveur.sendmail(MAIL_LOGIN, dest, message)
                         serveur.quit()
+                        REPORT.success("Sending email")
 
             
     def time_sleep_graceful_stop(self, pid, name):
         """Methode qui va kill un processus enfant apres un temps donnée avec un graceful stop"""
+        REPORT.info("Kill task name " + name + " Checking...")
         time.sleep(int(TAB_PROCESS[name]["stopwaitsecs"]))
         TAB_PROCESS[name]["ret_popen"].poll()
         TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
         if (TAB_PROCESS[name]["ret_popen"].returncode == None):
             os.kill(int(pid), utils.graceful_stop(TAB_PROCESS[name]["stopsignal"]))            
         TAB_PROCESS[name]["state"] = "STOPPED"
+        REPORT.info(utils.STOPPED.format(name).strip("\n\t\r\v\f-"))
         print(utils.STOPPED.format(name))
 
 
     def stop(self, name_proc):
         """Methode qui est executé au lancement de la commande stop"""
         if name_proc == "all":
+            REPORT.info("STOP all program in progress...")
             for name in list(TAB_PROCESS):
                 if TAB_PROCESS[name]["state"] == "STOPPED":
                     print(utils.ALREADY_STOPPED.format(name))
+                    REPORT.warning(utils.ALREADY_STOPPED.format(name).strip("\n\t\r\v\f-"))
                 elif TAB_PROCESS[name]["state"] == "FINISHED":
-                    print(utils.FINISHED.format(name_proc))
+                    print(utils.ALREADY_FINISHED.format(name))
+                    REPORT.warning(utils.ALREADY_FINISHED.format(name).strip("\n\t\r\v\f-"))
                 else:
                     pid = TAB_PROCESS[name]["pid"]
                     if ("RUNNING" in TAB_PROCESS[name]["state"]):
                         _thread.start_new_thread(self.time_sleep_graceful_stop, (pid, name, ))
                 TAB_PROCESS[name]["ret_popen"].poll()
                 TAB_PROCESS[name]["returncode"] = TAB_PROCESS[name]["ret_popen"].returncode
+            REPORT.info("STOP all program done ✅")
         elif name_proc in TAB_PROCESS:
             if TAB_PROCESS[name_proc]["state"] == "RUNNING":
                 pid = TAB_PROCESS[name_proc]["pid"]
                 if ("RUNNING" in TAB_PROCESS[name_proc]["state"]):
                     _thread.start_new_thread(self.time_sleep_graceful_stop, (pid, name_proc, ))
             elif TAB_PROCESS[name_proc]["state"] == "FINISHED":
-                print(utils.FINISHED.format(name_proc))
-            else:
+                print(utils.ALREADY_FINISHED.format(name_proc))
+                REPORT.info(utils.ALREADY_FINISHED.format(name_proc).strip("\n\t\r\v\f-"))
+            elif TAB_PROCESS[name_proc]["state"] == "STOPPED":
                 print(utils.ALREADY_STOPPED.format(name_proc))
-            TAB_PROCESS[name_proc]["ret_popen"].poll()
+                REPORT.info(utils.ALREADY_STOPPED.format(name_proc).strip("\n\t\r\v\f-"))
+            else:
+                TAB_PROCESS[name_proc]["ret_popen"].poll()
+                print(utils.STOPPED.format(name_proc))
+                REPORT.info(utils.STOPPED.format(name_proc).strip("\n\t\r\v\f-"))
 
     def start(self, name_proc):
         """Methode qui est executé au lancement de la commande start"""
         if name_proc == "all":
+            REPORT.info("START all program in progress...")
             for name in list(TAB_PROCESS):
-                if TAB_PROCESS[name]["state"] == "STOPPED":
-                    print(utils.STARTED.format(name))
-                    Create(self.dcty, name, 0).run()
-                elif TAB_PROCESS[name]["state"] == "FINISHED":
-                    print(utils.FINISHED.format(name_proc))
-                    Create(self.dcty, name, 0).run()
-                elif TAB_PROCESS[name]["state"] == "RUNNING":
+                if TAB_PROCESS[name]["state"] == "RUNNING":
                     print(utils.ALREADY_RUNNING.format(name))
+                    REPORT.warning(utils.ALREADY_RUNNING.format(name).strip("\n\t\r\v\f-"))
                 else:
                     Create(self.dcty, name, 0).run()
-                    print(utils.STARTED.format(name_proc))
+                    print(utils.STARTED.format(name))
+            REPORT.info("START all program done ✅")
 
         elif name_proc in TAB_PROCESS:
-            if TAB_PROCESS[name_proc]["state"] == "STOPPED":
-                Create(self.dcty, name_proc, 0).run()
-                print(utils.STARTED.format(name_proc))
-            elif TAB_PROCESS[name_proc]["state"] == "FINISHED":
-                print(utils.FINISHED.format(name_proc))
-                Create(self.dcty, name_proc, 0).run()
-                print(utils.STARTED.format(name_proc))
-            elif TAB_PROCESS[name_proc]["state"] == "RUNNING":
+            if TAB_PROCESS[name_proc]["state"] == "RUNNING":
+                REPORT.warning(utils.ALREADY_RUNNING.format(name_proc).strip("\n\t\r\v\f-"))
                 print(utils.ALREADY_RUNNING.format(name_proc))
             else:
                 Create(self.dcty, name_proc, 0).run()
@@ -188,6 +199,7 @@ class   Manage:
         while 1:
             prompt = input("TaskMaster $>")    
             p = prompt.split()
+            REPORT.log("Command " + prompt + " launch")
             if prompt == "help" or prompt == "?":
                 print(utils.COMMAND_AVAILABLE)
                 
@@ -236,9 +248,11 @@ class   Manage:
                             print("{}={}".format(k, v))
 
             elif prompt == "exit":
+                REPORT.log("Kill Taskmaster in progress...")
                 for name in list(TAB_PROCESS):
                     TAB_PROCESS[name]["stopwaitsecs"] = "0"
                     self.stop(name)
                 time.sleep(1)
+                REPORT.log("Kill Taskmaster done ✅")
                 print("Exit Succesfully")
                 sys.exit(0)

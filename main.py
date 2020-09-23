@@ -20,7 +20,6 @@ from src import manage_task
 from src import checker_file
 
 
-
 PARSER = argparse.ArgumentParser(
     prog="taskmaster",
     description="Superviser des programmes",
@@ -34,6 +33,6 @@ PARSER.add_argument(
 )
 
 if __name__ == "__main__":
-    path_file = os.path.abspath(PARSER.parse_args().c)
-    conf = checker_file.Checker_file(PARSER, path_file).run()
-    manage_task.Manage(conf, PARSER, path_file).run()
+        path_file = os.path.abspath(PARSER.parse_args().c)
+        conf = checker_file.Checker_file(PARSER, path_file).run()
+        manage_task.Manage(conf, PARSER, path_file).run()

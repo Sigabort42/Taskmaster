@@ -14,6 +14,7 @@
 
 import re
 
+from src.utils import REPORT
 
 
 class Checker_file:
@@ -61,6 +62,7 @@ class Checker_file:
 
     def create_dcty(self):
         """La méthode sert a crer le dictionnaire des processus a superviser par TaskMaster"""
+        REPORT.info("Create dictionnary in progress...")
         dcty = {}
         for conf in self.config:
             if (conf.get("name") and conf.get("command")):
@@ -79,9 +81,12 @@ class Checker_file:
                         dcty[conf.get("name")[i:]] = conf
                     else:
                         dcty[conf.get("process_name")] = conf
+        REPORT.info("Create dictionnary done ✅")
         return dcty
         
         
     def run(self):
+        REPORT.info("Check file conf in progress...")
         self.config = self.verify_file_conf(self.path_file)
+        REPORT.info("Check file conf done ✅")
         return self.create_dcty()
